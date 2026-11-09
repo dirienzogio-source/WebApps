@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#000000">
+<meta name="referrer" content="no-referrer">
+<!-- CSP: nessuna rete (connect-src/form-action none), nessun frame/oggetto, immagini solo blob:/data:. 'unsafe-inline' è necessario perché script e stili sono inline nel file singolo. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src blob: data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>Vault Viewer</title>
+<style>
+  /* Alto contrasto: sfondo nero, testo bianco, accento giallo. Nessuna sfumatura, trasparenza o ombra. */
+  :root{--bg:#000000;--text:#ffffff;--accent:#ffff00;--line:#ffffff;--ok:#66ff66;--err:#ff8080;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%;background:var(--bg);font-size:20px;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:1rem;line-height:1.5;min-height:100vh;
+    padding:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-right,0px)) calc(48px + env(safe-area-inset-bottom,0px)) calc(16px + env(safe-area-inset-left,0px));}
+  .wrap{max-width:720px;margin:0 auto;}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+  h1{font-family:var(--mono);font-size:1.3rem;font-weight:700;margin:0;color:var(--text);}
+  h1 span{color:var(--accent);}
+  .pill{font-family:var(--mono);font-size:1rem;font-weight:700;padding:6px 14px;border-radius:6px;border:3px solid var(--err);color:var(--err);background:var(--bg);white-space:nowrap;}
+  .pill.on{border-color:var(--ok);color:var(--ok);}
+  .hidden{display:none !important;}
+  .panel{background:var(--bg);border:3px solid var(--line);border-radius:8px;padding:18px;margin-bottom:16px;}
+  .lbl{display:block;font-size:1rem;font-weight:700;color:var(--accent);margin-bottom:8px;}
+  input[type=password],input[type=text],input[type=search]{
+    -webkit-appearance:none;appearance:none;width:100%;background:var(--bg);border:3px solid var(--line);color:var(--text);
+    padding:12px 14px;min-height:56px;border-radius:8px;font-family:var(--mono);font-size:1rem;}
+  input::placeholder{color:#d9d9d9;opacity:1;}
+  input:focus{outline:4px solid var(--accent);outline-offset:2px;}
+  button{-webkit-appearance:none;appearance:none;font-family:var(--sans);font-size:1rem;font-weight:700;min-height:56px;padding:0 18px;border-radius:8px;
+    border:3px solid var(--line);background:var(--bg);color:var(--text);cursor:pointer;}
+  button:focus-visible{outline:4px solid var(--accent);outline-offset:2px;}
+  button:disabled{opacity:1;color:#b3b3b3;border-style:dashed;border-color:#b3b3b3;cursor:not-allowed;}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#000000;}
+  button.primary:disabled{background:var(--bg);color:#b3b3b3;border-color:#b3b3b3;}
+  button.danger{border-color:var(--err);color:var(--err);background:var(--bg);}
+  button.big{width:100%;min-height:64px;font-size:1.1rem;}
+  button.sm{min-height:48px;padding:0 16px;font-size:.95rem;}
+  .pwrow{display:flex;gap:10px;flex-wrap:wrap;}
+  .pwrow input{flex:1 1 200px;min-width:0;}
+  .actions{display:flex;gap:10px;margin-top:14px;}
+  .actions button{flex:1;}
+  .msg{display:none;font-family:var(--mono);font-size:1rem;line-height:1.5;padding:12px 14px;border-radius:8px;margin-top:14px;background:var(--bg);}
+  .msg.show{display:block;}
+  .msg.err{color:var(--err);border:3px solid var(--err);}
+  .msg.ok{color:var(--ok);border:3px solid var(--ok);}
+  .count{font-size:1rem;font-weight:700;color:var(--accent);margin:12px 2px 14px;}
+  .card{background:var(--bg);border:3px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:16px;}
+  .card h3{margin:0 0 10px;font-size:1.25rem;font-weight:700;color:var(--accent);word-break:break-word;}
+  .card h3 a.site-link{color:var(--accent);text-decoration:underline;text-underline-offset:3px;}
+  .card h3 a.site-link:focus-visible{outline:4px solid var(--accent);outline-offset:2px;}
+  .f{padding:12px 0;border-top:2px solid var(--line);}
+  .f .k{font-size:.9rem;font-weight:700;color:var(--accent);margin-bottom:6px;}
+  .f .v{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .f .t{font-family:var(--mono);font-size:1.1rem;color:var(--text);word-break:break-all;min-width:0;flex:1 1 100%;}
+  .f .t.mask{letter-spacing:3px;}
+  .f .b{display:flex;gap:10px;flex-shrink:0;flex-wrap:wrap;}
+  .f .n{font-size:1.05rem;color:var(--text);white-space:pre-wrap;word-break:break-word;}
+  .empty{color:var(--text);text-align:center;padding:30px 0;font-size:1.05rem;border:3px dashed var(--line);border-radius:8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1><span>▣</span> vault-viewer</h1>
+    <span id="pill" class="pill">bloccato</span>
+  </header>
+
+  <div class="panel" id="startPanel">
+    <button class="primary big" id="btnLoad" type="button">Carica vault (PNG)</button>
+    <input type="file" id="fileIn" accept="image/png" class="hidden">
+    <div class="msg" id="startMsg"></div>
+  </div>
+
+  <div class="panel hidden" id="pwPanel">
+    <label class="lbl" for="pw">Master password</label>
+    <div class="pwrow">
+      <input type="password" id="pw" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go">
+      <button type="button" id="btnEye" aria-pressed="false">mostra</button>
+    </div>
+    <div class="actions">
+      <button type="button" id="btnCancel">Annulla</button>
+      <button type="button" class="primary" id="btnUnlock">Sblocca</button>
+    </div>
+    <div class="msg" id="pwMsg"></div>
+  </div>
+
+  <div class="hidden" id="vaultPanel">
+    <div class="pwrow">
+      <input type="search" id="q" placeholder="Cerca per sito, utente o note" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <button type="button" class="danger" id="btnLock">Blocca</button>
+    </div>
+    <div class="count" id="count"></div>
+    <div id="list"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+
+  var entries = null;
+  var pendingFile = null;
+  var busy = false;
+
+  var PBKDF2_ITERATIONS = 600000;
+  var CONTEXT = 'vault-stego-v5-pixel-permutation';
+  var HEADER_BYTES = 36, HEADER_BITS = 288;
+
+  function showMsg(el, text, type){ el.textContent = text; el.className = 'msg show ' + type; }
+  function clearMsg(el){ el.className = 'msg'; el.textContent = ''; }
+
+  async function deriveKey(password, salt, iterations){
+    var km = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), {name:'PBKDF2'}, false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      {name:'PBKDF2', salt: salt, iterations: iterations, hash:'SHA-256'},
+      km, {name:'AES-GCM', length:256}, false, ['decrypt']
+    );
+  }
+
+  async function derivePermutationSeed(password, saltSuffix){
+    var enc = new TextEncoder();
+    var km = await crypto.subtle.importKey('raw', enc.encode(password), {name:'PBKDF2'}, false, ['deriveBits']);
+    var ctx = enc.encode(CONTEXT);
+    var salt = ctx;
+    if (saltSuffix && saltSuffix.length){
+      salt = new Uint8Array(ctx.length + saltSuffix.length);
+      salt.set(ctx, 0);
+      salt.set(saltSuffix, ctx.length);
+    }
+    var bits = await crypto.subtle.deriveBits(
+      {name:'PBKDF2', salt: salt, iterations: PBKDF2_ITERATIONS, hash:'SHA-256'}, km, 256
+    );
+    return new Uint8Array(bits);
+  }
+
+  async function deriveKeystream(seed, numBytes){
+    var key = await crypto.subtle.importKey('raw', seed, {name:'AES-CTR'}, false, ['encrypt']);
+    var ks = await crypto.subtle.encrypt({name:'AES-CTR', counter:new Uint8Array(16), length:64}, key, new Uint8Array(numBytes));
+    return new Uint8Array(ks);
+  }
+
+  function keyedShuffleIndices(n, ks){
+    var arr = new Uint32Array(n);
+    for (var i=0;i<n;i++) arr[i]=i;
+    var pos = 0;
+    function next(maxExcl){
+      var bpd = maxExcl <= 256 ? 1 : (maxExcl <= 65536 ? 2 : 4);
+      var range = Math.pow(256, bpd);
+      var limit = range - (range % maxExcl);
+      var v;
+      do {
+        if (pos + bpd > ks.length) throw new Error('KEYSTREAM_EXHAUSTED');
+        v = 0;
+        for (var b=0;b<bpd;b++){ v = (v<<8) | ks[pos++]; }
+        v = v >>> 0;
+      } while (v >= limit);
+      return v % maxExcl;
+    }
+    for (var k=n-1;k>0;k--){
+      var j = next(k+1);
+      var t = arr[k]; arr[k]=arr[j]; arr[j]=t;
+    }
+    return arr;
+  }
+
+  async function computeChannelOrder(seed, n){
+    var mult = 4;
+    while (mult <= 64){
+      var ks = await deriveKeystream(seed, n*mult);
+      try { return keyedShuffleIndices(n, ks); }
+      catch(err){ if (err.message !== 'KEYSTREAM_EXHAUSTED') throw err; mult *= 2; }
+    }
+    throw new Error('KEYSTREAM_EXHAUSTED');
+  }
+
+  function computeRemainingChannels(total, headerChannels){
+    var reserved = new Uint8Array(total);
+    for (var i=0;i<headerChannels.length;i++) reserved[headerChannels[i]] = 1;
+    var rem = new Uint32Array(total - headerChannels.length);
+    var ri = 0;
+    for (var c=0;c<total;c++){ if (!reserved[c]) rem[ri++] = c; }
+    return rem;
+  }
+
+  function readBit(data, ch){ return data[Math.floor(ch/3)*4 + (ch % 3)] & 1; }
+
+  function bitsToBytes(bits){
+    var out = new Uint8Array(Math.floor(bits.length/8));
+    for (var i=0;i<out.length;i++){
+      var v = 0;
+      for (var b=0;b<8;b++){ v = (v<<1) | bits[i*8+b]; }
+      out[i] = v;
+    }
+    return out;
+  }
+
+  async function extractAndDeriveKey(imageData, password){
+    var total = Math.floor(imageData.data.length/4)*3;
+
+    var headerSeed = await derivePermutationSeed(password, null);
+    var headerOrder = await computeChannelOrder(headerSeed, total);
+    var headerChannels = headerOrder.slice(0, HEADER_BITS);
+
+    var hBits = new Uint8Array(HEADER_BITS);
+    for (var i=0;i<HEADER_BITS;i++) hBits[i] = readBit(imageData.data, headerChannels[i]);
+    var hBytes = bitsToBytes(hBits);
+    var hdv = new DataView(hBytes.buffer);
+    var iterations = hdv.getUint32(0, false);
+    var salt = hBytes.slice(4, 20);
+    var iv = hBytes.slice(20, 32);
+    var payloadLen = hdv.getUint32(32, false);
+
+    var remaining = computeRemainingChannels(total, headerChannels);
+    var maxPayload = Math.floor(remaining.length / 8);
+    if (payloadLen <= 0 || payloadLen > maxPayload || iterations !== PBKDF2_ITERATIONS){
+      throw new Error('DECRYPT_FAILED');
+    }
+
+    var res = await Promise.all([
+      derivePermutationSeed(password, salt),
+      deriveKey(password, salt, iterations)
+    ]);
+    var payloadOrder = await computeChannelOrder(res[0], remaining.length);
+    var pBits = new Uint8Array(payloadLen*8);
+    for (var p=0;p<pBits.length;p++) pBits[p] = readBit(imageData.data, remaining[payloadOrder[p]]);
+    return { key: res[1], iv: iv, ciphertext: bitsToBytes(pBits) };
+  }
+
+  function readImageData(file){
+    return new Promise(function(resolve, reject){
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function(){
+        try{
+          var c = document.createElement('canvas');
+          c.width = img.naturalWidth; c.height = img.naturalHeight;
+          var x = c.getContext('2d');
+          x.drawImage(img, 0, 0);
+          var d = x.getImageData(0, 0, c.width, c.height);
+          URL.revokeObjectURL(url);
+          resolve(d);
+        }catch(e){ URL.revokeObjectURL(url); reject(e); }
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error('Immagine non leggibile')); };
+      img.src = url;
+    });
+  }
+
+  async function copyText(t){
+    try{ await navigator.clipboard.writeText(t); return true; }catch(e){}
+    try{
+      var ta = document.createElement('textarea');
+      ta.value = t; ta.setAttribute('readonly','');
+      ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+      document.body.appendChild(ta);
+      ta.select(); ta.setSelectionRange(0, t.length);
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    }catch(e){ return false; }
+  }
+
+  function mkBtn(label, onClick){
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'sm'; b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+  function copyBtn(getVal){
+    var b = mkBtn('copia', async function(){
+      var ok = await copyText(getVal());
+      b.textContent = ok ? 'copiato' : 'errore';
+      setTimeout(function(){ b.textContent = 'copia'; }, 1200);
+    });
+    return b;
+  }
+  function field(label){
+    var f = document.createElement('div'); f.className = 'f';
+    var k = document.createElement('div'); k.className = 'k'; k.textContent = label;
+    f.appendChild(k);
+    return f;
+  }
+
+  function matches(e, t){
+    if (!t) return true;
+    t = t.toLowerCase();
+    return String(e.site||'').toLowerCase().indexOf(t) !== -1
+        || String(e.user||'').toLowerCase().indexOf(t) !== -1
+        || String(e.notes||'').toLowerCase().indexOf(t) !== -1;
+  }
+
+  // Se "Sito / servizio" è un indirizzo web (con o senza schema) restituisce l'URL
+  // http(s) assoluto, altrimenti null. Solo http/https: nessun altro schema
+  // (javascript:, data:, ecc.) può diventare un link. Identico a vault-stego-18.
+  var SITE_URL_RE = /^(https?:\/\/)?([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}(:\d{1,5})?([\/?#]\S*)?$/i;
+  function siteToUrl(text){
+    var t = String(text || '').trim();
+    if (!SITE_URL_RE.test(t)) return null;
+    try{
+      var u = new URL(/^https?:\/\//i.test(t) ? t : 'https://' + t);
+      return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : null;
+    }catch(e){ return null; }
+  }
+
+  function render(){
+    var list = $('list');
+    list.textContent = '';
+    var term = $('q').value.trim();
+    var shown = entries.filter(function(e){ return matches(e, term); });
+    $('count').textContent = term ? (shown.length + ' di ' + entries.length + ' voci') : (entries.length + ' voci');
+    if (!shown.length){
+      var d = document.createElement('div'); d.className = 'empty';
+      d.textContent = entries.length ? 'Nessuna voce corrisponde alla ricerca.' : 'Il vault non contiene voci.';
+      list.appendChild(d);
+      return;
+    }
+    shown.forEach(function(e){
+      var card = document.createElement('div'); card.className = 'card';
+      var h = document.createElement('h3');
+      var siteUrl = siteToUrl(e.site);
+      if (siteUrl){
+        var a = document.createElement('a');
+        a.href = siteUrl; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.className = 'site-link';
+        a.textContent = String(e.site);
+        h.appendChild(a);
+      } else {
+        h.textContent = e.site || '—';
+      }
+      card.appendChild(h);
+
+      if (e.user){
+        var fu = field('Utente');
+        var vu = document.createElement('div'); vu.className = 'v';
+        var tu = document.createElement('span'); tu.className = 't'; tu.textContent = e.user;
+        var bu = document.createElement('div'); bu.className = 'b';
+        bu.appendChild(copyBtn(function(){ return e.user; }));
+        vu.appendChild(tu); vu.appendChild(bu); fu.appendChild(vu); card.appendChild(fu);
+      }
+
+      var fp = field('Password');
+      var vp = document.createElement('div'); vp.className = 'v';
+      var tp = document.createElement('span'); tp.className = 't mask'; tp.textContent = '••••••••••';
+      var bp = document.createElement('div'); bp.className = 'b';
+      var shownPw = false;
+      var eye = mkBtn('mostra', function(){
+        shownPw = !shownPw;
+        tp.textContent = shownPw ? (e.pass || 'vuoto') : '••••••••••';
+        tp.className = shownPw ? 't' : 't mask';
+        eye.textContent = shownPw ? 'nascondi' : 'mostra';
+      });
+      bp.appendChild(eye);
+      bp.appendChild(copyBtn(function(){ return e.pass || ''; }));
+      vp.appendChild(tp); vp.appendChild(bp); fp.appendChild(vp); card.appendChild(fp);
+
+      if (e.notes){
+        var fn = field('Note');
+        var n = document.createElement('div'); n.className = 'n'; n.textContent = e.notes;
+        fn.appendChild(n); card.appendChild(fn);
+      }
+      list.appendChild(card);
+    });
+  }
+
+  function setPill(on, text){ $('pill').textContent = text; $('pill').className = 'pill' + (on ? ' on' : ''); }
+
+  function resetPwPanel(){
+    $('pw').value = '';
+    $('pw').type = 'password';
+    $('btnEye').textContent = 'mostra';
+    $('btnEye').setAttribute('aria-pressed','false');
+    clearMsg($('pwMsg'));
+  }
+
+  $('btnLoad').addEventListener('click', function(){ $('fileIn').click(); });
+
+  $('fileIn').addEventListener('change', function(e){
+    var f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    clearMsg($('startMsg'));
+    if (!(window.crypto && crypto.subtle)){
+      showMsg($('startMsg'), 'Web Crypto non disponibile in questo contesto (serve una pagina sicura). Impossibile decifrare.', 'err');
+      return;
+    }
+    pendingFile = f;
+    resetPwPanel();
+    $('startPanel').classList.add('hidden');
+    $('pwPanel').classList.remove('hidden');
+    $('pw').focus();
+  });
+
+  $('btnEye').addEventListener('click', function(){
+    var show = $('pw').type === 'password';
+    $('pw').type = show ? 'text' : 'password';
+    $('btnEye').textContent = show ? 'nascondi' : 'mostra';
+    $('btnEye').setAttribute('aria-pressed', show ? 'true' : 'false');
+  });
+
+  $('btnCancel').addEventListener('click', function(){
+    if (busy) return;
+    pendingFile = null;
+    resetPwPanel();
+    $('pwPanel').classList.add('hidden');
+    $('startPanel').classList.remove('hidden');
+  });
+
+  $('pw').addEventListener('keydown', function(e){ if (e.key === 'Enter') unlock(); });
+  $('btnUnlock').addEventListener('click', unlock);
+
+  async function unlock(){
+    if (busy || !pendingFile) return;
+    var pwMsg = $('pwMsg');
+    clearMsg(pwMsg);
+    var pw = $('pw').value;
+    busy = true;
+    $('btnUnlock').disabled = true; $('btnCancel').disabled = true;
+    showMsg(pwMsg, 'Sblocco in corso…', 'ok');
+
+    var imageData;
+    try{
+      imageData = await readImageData(pendingFile);
+    }catch(err){
+      showMsg(pwMsg, 'Errore nella lettura del file immagine: ' + err.message, 'err');
+      busy = false; $('btnUnlock').disabled = false; $('btnCancel').disabled = false;
+      return;
+    }
+
+    try{
+      var r = await extractAndDeriveKey(imageData, pw);
+      var plain = await crypto.subtle.decrypt({name:'AES-GCM', iv: r.iv}, r.key, r.ciphertext);
+      var obj = JSON.parse(new TextDecoder().decode(plain));
+      if (!obj || !Array.isArray(obj.entries)) throw new Error('DECRYPT_FAILED');
+      entries = obj.entries;
+      pendingFile = null;
+      resetPwPanel();
+      $('pwPanel').classList.add('hidden');
+      $('vaultPanel').classList.remove('hidden');
+      $('q').value = '';
+      setPill(true, 'sbloccato');
+      render();
+    }catch(err){
+      // Un solo messaggio: password errata e file non valido sono indistinguibili (nessun oracolo).
+      showMsg(pwMsg, 'Password errata, oppure il file non è un vault valido creato da questa app.', 'err');
+    }finally{
+      imageData = null;
+      busy = false; $('btnUnlock').disabled = false; $('btnCancel').disabled = false;
+    }
+  }
+
+  $('q').addEventListener('input', function(){ if (entries) render(); });
+
+  $('btnLock').addEventListener('click', function(){
+    entries = null;
+    pendingFile = null;
+    $('list').textContent = '';
+    $('count').textContent = '';
+    $('q').value = '';
+    $('vaultPanel').classList.add('hidden');
+    $('startPanel').classList.remove('hidden');
+    clearMsg($('startMsg'));
+    setPill(false, 'bloccato');
+  });
+})();
+</script>
+</body>
+</html>
