@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Confronto cataloghi CSV v6</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mut:#667085;--bd:#d9dde3;--a:#b42318;--abg:#fdecea;--b:#067647;--bbg:#e6f6ee;--c:#2f5bd8;--cbg:#e8eefc;--ac:#2f5bd8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171c;--card:#1d2127;--tx:#e8eaed;--mut:#9aa3af;--bd:#343a43;--a:#ff8a80;--abg:#3a1f1d;--b:#6fd3a0;--bbg:#173326;--c:#8fa8ff;--cbg:#1e2a4d;--ac:#8fa8ff}}
+:root[data-theme="dark"]{--bg:#14171c;--card:#1d2127;--tx:#e8eaed;--mut:#9aa3af;--bd:#343a43;--a:#ff8a80;--abg:#3a1f1d;--b:#6fd3a0;--bbg:#173326;--c:#8fa8ff;--cbg:#1e2a4d;--ac:#8fa8ff}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0 0 12px}
+.drops{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.drops{grid-template-columns:1fr}}
+.drop{background:var(--card);border:2px dashed var(--bd);border-radius:10px;padding:14px;text-align:center}
+.drop.over{border-color:var(--ac)}
+.drop b{display:block;margin-bottom:6px}
+.drop small{display:block;color:var(--mut);margin-top:6px;word-break:break-all}
+.opts{margin:12px 0;display:flex;gap:12px;flex-wrap:wrap;align-items:center;color:var(--mut)}
+.opts label{display:inline-flex;gap:6px;align-items:center}
+select,button{font:inherit;padding:6px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--card);color:var(--tx)}
+select:disabled{opacity:.5}
+button{cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.sum{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+.pill{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 12px}
+.pill b{font-size:18px;display:block}
+.err{background:var(--abg);color:var(--a);padding:10px;border-radius:8px;margin:10px 0}
+.note{color:var(--mut);font-size:13px;margin:4px 0}
+section{background:var(--card);border:1px solid var(--bd);border-radius:10px;margin:14px 0;overflow:hidden}
+section h2{font-size:15px;margin:0;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+section h2 button{font-size:13px;padding:4px 8px}
+.s1 h2{background:var(--abg);color:var(--a)}
+.s2 h2{background:var(--bbg);color:var(--b)}
+.s3 h2{background:var(--cbg);color:var(--c)}
+.wrap{overflow-x:scroll;overflow-y:auto;max-height:520px}
+.xtop{overflow-x:scroll;overflow-y:hidden;border-top:1px solid var(--bd)}
+.xtop>div{height:1px}
+.wrap,.xtop{scrollbar-width:auto;scrollbar-color:var(--mut) var(--bd)}
+.wrap::-webkit-scrollbar,.xtop::-webkit-scrollbar{height:14px;width:14px}
+.wrap::-webkit-scrollbar-track,.xtop::-webkit-scrollbar-track{background:var(--bd)}
+.wrap::-webkit-scrollbar-thumb,.xtop::-webkit-scrollbar-thumb{background:var(--mut);border-radius:7px;border:3px solid var(--bd)}
+table{border-collapse:collapse;width:max-content;min-width:100%}
+th,td{text-align:left;padding:6px 10px;border-top:1px solid var(--bd);vertical-align:top;white-space:nowrap}
+th{position:sticky;top:0;background:var(--card);font-size:12px;color:var(--mut)}
+.s1 tbody tr{background:color-mix(in srgb,var(--abg) 45%,transparent)}
+.s2 tbody tr{background:color-mix(in srgb,var(--bbg) 45%,transparent)}
+.s3 tbody tr{background:color-mix(in srgb,var(--cbg) 45%,transparent)}
+.empty{padding:12px;color:var(--mut)}
+</style>
+</head>
+<body>
+<main>
+<h1>Confronto cataloghi CSV</h1>
+<div class="drops">
+  <label class="drop" id="d1"><b>File 1</b><input type="file" id="f1" accept=".csv,text/csv"><small id="n1">nessun file</small></label>
+  <label class="drop" id="d2"><b>File 2</b><input type="file" id="f2" accept=".csv,text/csv"><small id="n2">nessun file</small></label>
+</div>
+<div class="opts">
+  <label>Confronta per:
+    <select id="modeSel">
+      <option value="row">Riga intera (tutte le colonne)</option>
+      <option value="col">Singola colonna</option>
+    </select>
+  </label>
+  <label id="keyLbl">Colonna:
+    <select id="keySel"><option value="Titolo">Titolo</option></select>
+  </label>
+  <label><input type="checkbox" id="showTrama" checked> Mostra colonna Trama</label>
+  <span class="note">Maiuscole, spazi multipli e accenti Unicode normalizzati. Tutto avviene nel browser.</span>
+</div>
+<div id="out"></div>
+</main>
+<script>
+/* ---- logica ---- */
+function decode(buf){
+  let t;
+  try{t=new TextDecoder('utf-8',{fatal:true}).decode(buf)}
+  catch(e){t=new TextDecoder('windows-1252').decode(buf)}
+  return t.replace(/^\uFEFF/,'');
+}
+function detectDelim(t){
+  const l=t.split(/\r?\n/,1)[0];
+  const c={';':0,',':0,'\t':0};let q=false;
+  for(const ch of l){if(ch==='"')q=!q;else if(!q&&ch in c)c[ch]++}
+  return Object.keys(c).sort((a,b)=>c[b]-c[a])[0];
+}
+function parseRows(t,d,esc){
+  const rows=[],n=t.length,D=d.charCodeAt(0);
+  let r=[],f='',q=false,s=0,i=0;
+  while(i<n){
+    const c=t.charCodeAt(i);
+    if(q){
+      if(esc&&c===92){const x=t.charCodeAt(i+1);if(x===34||x===39||x===92){f+=t.slice(s,i)+t[i+1];i+=2;s=i;continue}}
+      if(c===34){
+        f+=t.slice(s,i);
+        if(t.charCodeAt(i+1)===34){f+='"';i+=2;s=i;continue}
+        q=false;i++;s=i;continue;
+      }
+      i++;
+    }else{
+      if(c===34){f+=t.slice(s,i);q=true;i++;s=i;continue}
+      if(c===D){f+=t.slice(s,i);r.push(f);f='';i++;s=i;continue}
+      if(c===10||c===13){
+        f+=t.slice(s,i);
+        if(c===13&&t.charCodeAt(i+1)===10)i++;
+        r.push(f);f='';rows.push(r);r=[];i++;s=i;continue;
+      }
+      i++;
+    }
+  }
+  f+=t.slice(s,n);
+  if(f!==''||r.length){r.push(f);rows.push(r)}
+  return rows.filter(x=>x.some(v=>v.trim()!==''));
+}
+/* Accetta sia le virgolette raddoppiate ("") sia l'escape con backslash (\" \' \\):
+   prova per prima la variante più probabile e tiene quella con meno righe di lunghezza anomala. */
+function parseCSV(t){
+  const d=detectDelim(t);
+  const hasBs=/\\["'\\]/.test(t);
+  let clean=null,bestBad=Infinity,esc=false;
+  for(const e of (hasBs?[true,false]:[false,true])){
+    const rows=parseRows(t,d,e);
+    const w=rows.length?rows[0].length:0;
+    let bad=0;for(const x of rows)if(x.length!==w)bad++;
+    if(bad<bestBad){clean=rows;bestBad=bad;esc=e}
+    if(bestBad===0)break;
+  }
+  if(!clean||!clean.length)return{head:[],data:[],esc:false};
+  const head=clean[0].map(h=>h.trim());
+  const data=clean.slice(1).map(x=>{const o={};head.forEach((h,i)=>o[h]=(x[i]??'').trim());return o});
+  return{head,data,esc};
+}
+const norm=s=>(s||'').normalize('NFC').replace(/\s+/g,' ').trim().toUpperCase();
+
+/* Confronto su un elenco di colonne.
+   multi=true  (riga intera): le righe identiche si contano come multiinsieme.
+   multi=false (singola colonna): conta solo la presenza della chiave. */
+function compare(A,B,cols,multi){
+  const group=R=>{
+    const m=new Map();let empty=0;
+    for(const r of R){
+      const p=cols.map(c=>norm(r[c]));
+      if(p.every(x=>!x)){empty++;continue}
+      const k=p.join('\u0001');
+      (m.get(k)||m.set(k,[]).get(k)).push(r);
+    }
+    return{m,empty};
+  };
+  const ga=group(A),gb=group(B),onlyA=[],onlyB=[],common=[];
+  for(const [k,v] of ga.m){
+    const w=gb.m.get(k);
+    if(!w){onlyA.push(...v);continue}
+    if(multi){const n=Math.min(v.length,w.length);common.push(...v.slice(0,n));onlyA.push(...v.slice(n))}
+    else common.push(...v);
+  }
+  for(const [k,w] of gb.m){
+    const v=ga.m.get(k);
+    if(!v){onlyB.push(...w);continue}
+    if(multi&&w.length>v.length)onlyB.push(...w.slice(v.length));
+  }
+  const ia=new Map(A.map((r,i)=>[r,i])),ib=new Map(B.map((r,i)=>[r,i]));
+  onlyA.sort((x,y)=>ia.get(x)-ia.get(y));
+  common.sort((x,y)=>ia.get(x)-ia.get(y));
+  onlyB.sort((x,y)=>ib.get(x)-ib.get(y));
+  const dup=g=>[...g.m.values()].filter(v=>v.length>1).length;
+  return{onlyA,onlyB,common,uniqA:ga.m.size,uniqB:gb.m.size,dupA:dup(ga),dupB:dup(gb),
+    emptyA:ga.empty,emptyB:gb.empty,totA:A.length-ga.empty,totB:B.length-gb.empty};
+}
+
+/* ---- UI ---- */
+const S={1:null,2:null};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function load(n,file){
+  if(!file)return;
+  try{S[n]={name:file.name,...parseCSV(decode(await file.arrayBuffer()))}}
+  catch(e){S[n]=null;$('out').innerHTML='<div class="err">Errore di lettura: '+esc(e.message)+'</div>';return}
+  Object.keys(expanded).forEach(k=>delete expanded[k]);
+  $('n'+n).textContent=file.name+' — '+S[n].data.length+' righe'+(S[n].esc?' (escape con backslash)':'');
+  run();
+}
+['1','2'].forEach(n=>{
+  $('f'+n).addEventListener('change',e=>load(n,e.target.files[0]));
+  const d=$('d'+n);
+  d.addEventListener('dragover',e=>{e.preventDefault();d.classList.add('over')});
+  d.addEventListener('dragleave',()=>d.classList.remove('over'));
+  d.addEventListener('drop',e=>{e.preventDefault();d.classList.remove('over');load(n,e.dataTransfer.files[0])});
+});
+['keySel','modeSel','showTrama'].forEach(id=>$(id).addEventListener('change',run));
+
+function setCols(){
+  const h=S[1].head.filter(x=>S[2].head.includes(x)),cur=$('keySel').value;
+  const sel=h.includes(cur)?cur:(h.find(y=>y.toLowerCase()==='titolo')||h[0]);
+  $('keySel').innerHTML=h.map(x=>'<option'+(x===sel?' selected':'')+'>'+esc(x)+'</option>').join('');
+  return h;
+}
+function table(rows,head){
+  if(!rows.length)return'<div class="empty">Nessuna riga.</div>';
+  const cols=head.filter(h=>h!=='Trama'||$('showTrama').checked);
+  return'<div class="xtop"><div></div></div><div class="wrap"><table><thead><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'+
+    rows.map(r=>'<tr>'+cols.map(c=>'<td>'+esc(r[c]??'')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+}
+function csvField(v){v=String(v??'');return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+function toCSV(rows,head){
+  return '\uFEFF'+[head.map(csvField).join(';')].concat(rows.map(r=>head.map(h=>csvField(r[h])).join(';'))).join('\r\n')+'\r\n';
+}
+function download(name,text){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'}));
+  a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+let last=null,cache=null;const LIMIT=1000,expanded={};
+$('out').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-dl],button[data-all]');
+  if(!b||!last)return;
+  if(b.dataset.all){expanded[b.dataset.all]=true;run();return}
+  const k=b.dataset.dl;
+  download(last.files[k].name,toCSV(last.files[k].rows,last.files[k].head));
+});
+function section(cls,title,key,rows,head){
+  const cut=!expanded[key]&&rows.length>LIMIT,shown=cut?rows.slice(0,LIMIT):rows;
+  return '<section class="'+cls+'"><h2><span>'+title+' ('+rows.length+')</span><span>'+
+    (cut?'<button type="button" data-all="'+key+'">Mostra tutte</button> ':'')+
+    (rows.length?'<button type="button" data-dl="'+key+'">Scarica CSV</button>':'')+'</span></h2>'+
+    (cut?'<p class="note" style="padding:0 12px">Mostrate le prime '+LIMIT+' righe su '+rows.length+'. «Scarica CSV» esporta l\'elenco completo.</p>':'')+
+    table(shown,head)+'</section>';
+}
+function run(){
+  if(!S[1]||!S[2])return;
+  const common=setCols(),out=$('out');
+  const rowMode=$('modeSel').value==='row';
+  $('keySel').disabled=rowMode;
+  $('keyLbl').style.display=rowMode?'none':'';
+  if(!common.length){out.innerHTML='<div class="err">Nessuna colonna in comune tra i due file.</div>';return}
+  const diffHead=S[1].head.join()!==S[2].head.join();
+  const col=$('keySel').value;
+  const cols=rowMode?common:[col];
+  const ck=cols.join('\u0001')+'|'+rowMode;
+  if(!cache||cache.a!==S[1].data||cache.b!==S[2].data||cache.ck!==ck)
+    cache={a:S[1].data,b:S[2].data,ck,res:compare(S[1].data,S[2].data,cols,rowMode)};
+  const res=cache.res;
+  const base1=S[1].name.replace(/\.csv$/i,''),base2=S[2].name.replace(/\.csv$/i,'');
+  last={res,files:{
+    a:{name:'solo_file1_'+base1+'.csv',rows:res.onlyA,head:S[1].head},
+    b:{name:'solo_file2_'+base2+'.csv',rows:res.onlyB,head:S[2].head},
+    c:{name:'comuni_'+base1+'.csv',rows:res.common,head:S[1].head}}};
+  let h='';
+  if(diffHead){
+    const ex1=S[1].head.filter(x=>!common.includes(x)),ex2=S[2].head.filter(x=>!common.includes(x));
+    h+='<div class="err">Le intestazioni dei due file sono diverse. Colonne 1: '+esc(S[1].head.join(', '))+' — Colonne 2: '+esc(S[2].head.join(', '))+
+      (rowMode?'. Il confronto usa solo le colonne in comune'+(ex1.length||ex2.length?'; escluse: '+esc(ex1.concat(ex2).join(', ')):'')+'.':'')+'</div>';
+  }
+  if(rowMode){
+    h+='<div class="sum">'+
+      '<div class="pill"><b>'+res.totA+'</b>righe nel file 1</div>'+
+      '<div class="pill"><b>'+res.totB+'</b>righe nel file 2</div>'+
+      '<div class="pill" style="color:var(--c)"><b>'+res.common.length+'</b>in entrambi</div>'+
+      '<div class="pill" style="color:var(--a)"><b>'+res.onlyA.length+'</b>solo nel file 1</div>'+
+      '<div class="pill" style="color:var(--b)"><b>'+res.onlyB.length+'</b>solo nel file 2</div></div>';
+  }else{
+    const both=res.uniqA-new Set(res.onlyA.map(r=>norm(r[col]))).size;
+    h+='<div class="sum">'+
+      '<div class="pill"><b>'+res.uniqA+'</b>valori univoci nel file 1</div>'+
+      '<div class="pill"><b>'+res.uniqB+'</b>valori univoci nel file 2</div>'+
+      '<div class="pill" style="color:var(--c)"><b>'+both+'</b>in comune</div>'+
+      '<div class="pill" style="color:var(--a)"><b>'+res.onlyA.length+'</b>righe solo nel file 1</div>'+
+      '<div class="pill" style="color:var(--b)"><b>'+res.onlyB.length+'</b>righe solo nel file 2</div></div>';
+  }
+  const notes=[];
+  if(res.dupA)notes.push(res.dupA+(rowMode?' righe duplicate nel file 1':' valori duplicati nel file 1'));
+  if(res.dupB)notes.push(res.dupB+(rowMode?' righe duplicate nel file 2':' valori duplicati nel file 2'));
+  if(res.emptyA||res.emptyB)notes.push('righe vuote nelle colonne confrontate, ignorate: '+res.emptyA+' (file 1), '+res.emptyB+' (file 2)');
+  if(rowMode)notes.push('colonne confrontate: '+cols.join(', '));
+  if(notes.length)h+='<p class="note">'+esc(notes.join(' · '))+'</p>';
+  h+=section('s1','Solo nel file 1','a',res.onlyA,S[1].head);
+  h+=section('s2','Solo nel file 2','b',res.onlyB,S[2].head);
+  h+=section('s3','In entrambi i file','c',res.common,S[1].head);
+  out.innerHTML=h;
+  syncBars();
+}
+/* barra di scorrimento orizzontale in alto, sincronizzata con quella in basso */
+function syncBars(){
+  document.querySelectorAll('.xtop').forEach(top=>{
+    const wrap=top.nextElementSibling;
+    if(!wrap||!wrap.classList.contains('wrap'))return;
+    top.firstChild.style.width=wrap.scrollWidth+'px';
+    top.onscroll=()=>{if(wrap.scrollLeft!==top.scrollLeft)wrap.scrollLeft=top.scrollLeft};
+    wrap.onscroll=()=>{if(top.scrollLeft!==wrap.scrollLeft)top.scrollLeft=wrap.scrollLeft};
+  });
+}
+window.addEventListener('resize',syncBars);
+</script>
+</body>
+</html>
