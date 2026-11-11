@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timbratura</title>
+<style>
+  :root{
+    --ink:#1B2A41;
+    --ink-soft:#3C4E68;
+    --paper:#F7F5F0;
+    --panel:#FFFFFF;
+    --amber:#C77D22;
+    --amber-soft:#F0DDBB;
+    --green:#3F6B49;
+    --red:#A23E33;
+    --line:#DDD7C8;
+    --mono: "SFMono-Regular", "Consolas", "Liberation Mono", Menlo, monospace;
+    --sans: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:32px 16px 80px;
+  }
+  main{
+    width:100%;
+    max-width:560px;
+  }
+  h1{
+    font-size:1.5rem;
+    font-weight:600;
+    margin:0 0 4px;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    color:var(--ink-soft);
+    font-size:0.95rem;
+    margin:0 0 28px;
+  }
+  .buttons{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .buttons button{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px 8px;
+    font-family:var(--sans);
+    font-size:0.85rem;
+    font-weight:600;
+    color:var(--ink);
+    cursor:pointer;
+    transition:border-color 0.15s ease, transform 0.05s ease;
+    line-height:1.3;
+  }
+  .buttons button:hover{ border-color:var(--amber); }
+  .buttons button:active{ transform:translateY(1px); }
+  .buttons button[aria-pressed="true"]{
+    border-color:var(--amber);
+    box-shadow:inset 0 0 0 1px var(--amber);
+  }
+  .buttons button:focus-visible{
+    outline:2px solid var(--amber);
+    outline-offset:2px;
+  }
+
+  .options{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:20px;
+    font-size:0.82rem;
+    color:var(--ink-soft);
+  }
+  .options label{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    cursor:pointer;
+  }
+  .options input[type="checkbox"]{
+    width:16px;
+    height:16px;
+    accent-color:var(--amber);
+  }
+  .options input[type="checkbox"]:disabled + span{ opacity:0.6; }
+  .test-btn{
+    background:none;
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:6px 12px;
+    font-family:var(--sans);
+    font-size:0.8rem;
+    font-weight:600;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .test-btn:hover{ border-color:var(--amber); }
+  .test-btn:focus-visible{ outline:2px solid var(--amber); outline-offset:2px; }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:20px;
+    margin-bottom:16px;
+  }
+  .panel h2{
+    font-size:1rem;
+    margin:0 0 14px;
+    font-weight:600;
+  }
+  .field-row{
+    display:flex;
+    gap:10px;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+  }
+  .field{
+    flex:1;
+    min-width:110px;
+  }
+  .field label{
+    display:block;
+    font-size:0.78rem;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+  }
+  .field input{
+    width:100%;
+    font-family:var(--mono);
+    font-size:1.1rem;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  .field input:focus-visible{
+    outline:2px solid var(--amber);
+    outline-offset:1px;
+  }
+  .confirm-btn{
+    background:var(--ink);
+    color:#fff;
+    border:none;
+    border-radius:7px;
+    padding:10px 18px;
+    font-size:0.9rem;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .confirm-btn:hover{ background:var(--ink-soft); }
+  .confirm-btn:focus-visible{ outline:2px solid var(--amber); outline-offset:2px; }
+
+  .note{
+    font-size:0.85rem;
+    color:var(--ink-soft);
+    margin-top:10px;
+    line-height:1.5;
+  }
+  .warn{
+    font-size:0.85rem;
+    color:var(--red);
+    margin-top:10px;
+    line-height:1.5;
+  }
+
+  .status-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .status-item{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+  }
+  .status-item.due{
+    border-color:var(--amber);
+    background:var(--amber-soft);
+  }
+  .status-item .label{
+    font-weight:600;
+    font-size:0.92rem;
+  }
+  .status-item .target{
+    font-family:var(--mono);
+    font-size:0.85rem;
+    color:var(--ink-soft);
+  }
+  .status-item .countdown{
+    font-family:var(--mono);
+    font-size:1.05rem;
+    min-width:74px;
+    text-align:right;
+  }
+  .status-item .cancel{
+    background:none;
+    border:none;
+    color:var(--ink-soft);
+    font-size:0.8rem;
+    cursor:pointer;
+    text-decoration:underline;
+    padding:2px;
+  }
+  .status-item .cancel:focus-visible{ outline:2px solid var(--amber); }
+
+  .entrata-banner{
+    font-family:var(--mono);
+    font-size:0.85rem;
+    color:var(--ink-soft);
+    margin-bottom:16px;
+  }
+  .permesso-list{
+    list-style:none;
+    margin:6px 0 0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .permesso-list li{
+    font-size:0.8rem;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .permesso-del{
+    background:none;
+    border:none;
+    color:var(--red);
+    font-family:var(--sans);
+    font-size:0.78rem;
+    cursor:pointer;
+    text-decoration:underline;
+    padding:2px;
+  }
+  .permesso-del:focus-visible{ outline:2px solid var(--amber); }
+
+  #alarmOverlay{
+    position:fixed;
+    inset:0;
+    background:rgba(27,42,65,0.92);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+    padding:20px;
+  }
+  #alarmOverlay.show{ display:flex; }
+  .alarm-box{
+    background:var(--paper);
+    border-radius:14px;
+    padding:32px 28px;
+    max-width:380px;
+    text-align:center;
+  }
+  .alarm-box .msg{
+    font-size:1.2rem;
+    font-weight:600;
+    margin-bottom:6px;
+    white-space:pre-line;
+  }
+  .alarm-box .time{
+    font-family:var(--mono);
+    color:var(--ink-soft);
+    margin-bottom:20px;
+  }
+  .alarm-box button{
+    background:var(--ink);
+    color:#fff;
+    border:none;
+    border-radius:7px;
+    padding:10px 22px;
+    font-size:0.9rem;
+    font-weight:600;
+    cursor:pointer;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Timbratura</h1>
+  <p class="subtitle">Calcolo orari di uscita, gestione permessi e sveglia.</p>
+
+  <div class="buttons">
+    <button id="btnUscita" aria-pressed="false">Calcolo Uscita</button>
+    <button id="btnPermesso" aria-pressed="false">Aggiungi Permesso</button>
+    <button id="btnSveglia" aria-pressed="false">Genera sveglia</button>
+  </div>
+
+  <div class="options">
+    <label><input type="checkbox" id="chkWake" checked><span id="wakeLabel">Tieni lo schermo acceso con timer attivi</span></label>
+    <button class="test-btn" id="btnTest" type="button">Prova suono</button>
+  </div>
+
+  <div id="entrataBanner" class="entrata-banner" hidden></div>
+
+  <div id="panelArea"></div>
+
+  <div id="statusArea" class="status-list"></div>
+</main>
+
+<div id="alarmOverlay" role="alertdialog" aria-modal="true" aria-labelledby="alarmMsg">
+  <div class="alarm-box">
+    <div class="msg" id="alarmMsg"></div>
+    <div class="time" id="alarmTime"></div>
+    <button id="alarmDismiss">Ho capito</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Stato ----------
+  var state = {
+    entrata: null,          // Date: orario di entrata (oggi)
+    permessoTotalMin: 0,    // minuti totali di permesso scorporati
+    permessoCount: 0,
+    permessi: [],           // [{id, uscita: Date, rientro: Date, durataMin: number}]
+    timers: []              // {id, label, target: Date, fired: bool, elId}
+  };
+
+  var permessoSeq = 0;      // contatore per id univoci dei permessi
+
+  var SOGLIA_BUONO_PASTO_MIN = 6*60+31; // 391
+  var SOGLIA_REGOLARE_MIN    = 7*60+42; // 462
+
+  var BASE_TITLE = 'Timbratura';
+
+  var panelArea   = document.getElementById('panelArea');
+  var statusArea  = document.getElementById('statusArea');
+  var entrataBanner = document.getElementById('entrataBanner');
+
+  var btnUscita   = document.getElementById('btnUscita');
+  var btnPermesso = document.getElementById('btnPermesso');
+  var btnSveglia  = document.getElementById('btnSveglia');
+  var btnTest     = document.getElementById('btnTest');
+  var chkWake     = document.getElementById('chkWake');
+  var wakeLabel   = document.getElementById('wakeLabel');
+
+  // ---------- Audio ----------
+  var audioCtx = null;
+  var audioOut = null;   // nodo d'uscita (compressore) verso destination
+
+  // Crea il contesto audio (se serve) e prova a riattivarlo se sospeso.
+  function unlockAudio(){
+    if(!audioCtx){
+      try{
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        var comp = audioCtx.createDynamicsCompressor();
+        comp.threshold.value = -12;
+        comp.knee.value = 6;
+        comp.ratio.value = 12;
+        comp.attack.value = 0.003;
+        comp.release.value = 0.1;
+        comp.connect(audioCtx.destination);
+        audioOut = comp;
+      }catch(e){
+        audioCtx = null;
+        audioOut = null;
+      }
+    }
+    if(audioCtx && audioCtx.state !== 'running'){
+      try{
+        var p = audioCtx.resume();
+        if(p && p.catch){ p.catch(function(){}); }
+      }catch(e){}
+    }
+  }
+
+  // Un ciclo di 4 note (onda quadra, due toni alternati), ~1,1 s.
+  function beep(){
+    if(!audioCtx || !audioOut) return;
+    var freqs = [880, 1175, 880, 1175];
+    var duration = 0.2;
+    var gap = 0.08;
+    var peak = 0.8;
+    var t0 = audioCtx.currentTime + 0.05;
+    for(var i=0;i<freqs.length;i++){
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = freqs[i];
+      var start = t0 + i*(duration+gap);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(peak, start+0.01);
+      gain.gain.setValueAtTime(peak, start+duration-0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start+duration);
+      osc.connect(gain);
+      gain.connect(audioOut);
+      osc.start(start);
+      osc.stop(start+duration+0.02);
+    }
+  }
+
+  function vibrateNow(){
+    try{
+      if(navigator.vibrate){ navigator.vibrate([300,100,300,100,300]); }
+    }catch(e){}
+  }
+
+  // Un ciclo completo: riattiva l'audio se serve, suona e vibra.
+  function playCycle(){
+    unlockAudio();
+    vibrateNow();
+    if(!audioCtx) return;
+    if(audioCtx.state === 'running'){
+      beep();
+    }else{
+      try{
+        audioCtx.resume().then(beep).catch(function(){});
+      }catch(e){}
+    }
+  }
+
+  // ---------- Allarme ripetuto ----------
+  var alarmLoopHandle = null;
+  var titleFlashHandle = null;
+  var activeAlarms = [];   // [{label, target}]
+
+  function startAlarmLoop(){
+    if(alarmLoopHandle) return;
+    playCycle();
+    alarmLoopHandle = setInterval(playCycle, 1500);
+
+    var flashOn = false;
+    var flashText = '\u23F0 ALLARME';
+    titleFlashHandle = setInterval(function(){
+      flashOn = !flashOn;
+      document.title = flashOn ? flashText : BASE_TITLE;
+    }, 800);
+  }
+
+  function stopAlarmLoop(){
+    if(alarmLoopHandle){ clearInterval(alarmLoopHandle); alarmLoopHandle = null; }
+    if(titleFlashHandle){ clearInterval(titleFlashHandle); titleFlashHandle = null; }
+    document.title = BASE_TITLE;
+    try{
+      if(navigator.vibrate){ navigator.vibrate(0); }
+    }catch(e){}
+  }
+
+  // ---------- Wake Lock ----------
+  var wakeLock = null;
+  var wakeRequesting = false;
+  var wakeSupported = ('wakeLock' in navigator);
+
+  if(!wakeSupported){
+    chkWake.checked = false;
+    chkWake.disabled = true;
+    wakeLabel.textContent = 'Schermo acceso: non supportato da questo browser';
+  }
+
+  function hasPendingTimers(){
+    return state.timers.some(function(t){ return !t.fired; });
+  }
+
+  function updateWakeLock(){
+    try{
+      updateWakeLockInner();
+    }catch(e){
+      wakeRequesting = false;
+    }
+  }
+
+  function updateWakeLockInner(){
+    if(!wakeSupported) return;
+    var want = chkWake.checked && hasPendingTimers();
+    if(want){
+      if(wakeLock || wakeRequesting || document.visibilityState !== 'visible') return;
+      wakeRequesting = true;
+      navigator.wakeLock.request('screen').then(function(sentinel){
+        wakeRequesting = false;
+        wakeLock = sentinel;
+        sentinel.addEventListener('release', function(){
+          if(wakeLock === sentinel){ wakeLock = null; }
+        });
+        updateWakeLock(); // se nel frattempo non serve più, rilascia
+      }).catch(function(){
+        wakeRequesting = false;
+      });
+    }else if(wakeLock){
+      var s = wakeLock;
+      wakeLock = null;
+      try{
+        var p = s.release();
+        if(p && p.catch){ p.catch(function(){}); }
+      }catch(e){}
+    }
+  }
+
+  chkWake.addEventListener('change', updateWakeLock);
+
+  // ---------- Util ----------
+  function pad(n){ return n<10 ? '0'+n : ''+n; }
+  function fmtTime(d){ return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); }
+  function fmtHM(d){ return pad(d.getHours())+':'+pad(d.getMinutes()); }
+
+  function todayAt(hh, mm){
+    var d = new Date();
+    d.setHours(hh, mm, 0, 0);
+    return d;
+  }
+
+  function addMinutes(date, min){
+    return new Date(date.getTime() + min*60000);
+  }
+
+  function diffMinutes(dateLater, dateEarlier){
+    return Math.round((dateLater.getTime() - dateEarlier.getTime())/60000);
+  }
+
+  function clearActivePanel(){
+    panelArea.innerHTML = '';
+  }
+
+  function setActiveButton(btn){
+    [btnUscita, btnPermesso, btnSveglia].forEach(function(b){
+      b.setAttribute('aria-pressed', b===btn ? 'true':'false');
+    });
+  }
+
+  // ---------- Gestione timer/countdown ----------
+  var tickHandle = null;
+
+  function startTicking(){
+    if(tickHandle) return;
+    tickHandle = setInterval(tick, 1000);
+  }
+
+  function tick(){
+    var now = new Date();
+    var firedNow = false;
+    state.timers.forEach(function(t){
+      if(t.fired) return;
+      var remainingMs = t.target.getTime() - now.getTime();
+      var el = document.getElementById(t.elId);
+      if(!el) return;
+      var cd = el.querySelector('.countdown');
+      if(remainingMs <= 0){
+        t.fired = true;
+        firedNow = true;
+        cd.textContent = '00:00:00';
+        el.classList.add('due');
+        try{
+          triggerAlarm(t.label, t.target);
+        }catch(e){}
+        return;
+      }
+      var totalSec = Math.floor(remainingMs/1000);
+      var hh = Math.floor(totalSec/3600);
+      var mm = Math.floor((totalSec%3600)/60);
+      var ss = totalSec%60;
+      cd.textContent = pad(hh)+':'+pad(mm)+':'+pad(ss);
+    });
+    if(firedNow){ updateWakeLock(); }
+  }
+
+  function addTimer(label, targetDate){
+    var id = 't'+Date.now()+Math.random().toString(16).slice(2);
+    var timerObj = { id:id, label:label, target:targetDate, fired:false, elId:'row-'+id };
+    state.timers.push(timerObj);
+    renderStatusItem(timerObj);
+    startTicking();
+    updateWakeLock();
+    return timerObj;
+  }
+
+  function removeTimer(id){
+    state.timers = state.timers.filter(function(t){ return t.id!==id; });
+    var el = document.getElementById('row-'+id);
+    if(el) el.remove();
+    updateWakeLock();
+  }
+
+  function renderStatusItem(t){
+    var row = document.createElement('div');
+    row.className = 'status-item';
+    row.id = t.elId;
+    row.innerHTML =
+      '<div>'+
+        '<div class="label">'+escapeHtml(t.label)+'</div>'+
+        '<div class="target">previsto alle '+fmtHM(t.target)+'</div>'+
+      '</div>'+
+      '<div class="countdown">--:--:--</div>'+
+      '<button class="cancel" type="button">annulla</button>';
+    row.querySelector('.cancel').addEventListener('click', function(){
+      removeTimer(t.id);
+    });
+    statusArea.appendChild(row);
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function renderAlarmOverlay(){
+    document.getElementById('alarmMsg').textContent =
+      activeAlarms.map(function(a){ return a.label; }).join('\n');
+    document.getElementById('alarmTime').textContent =
+      activeAlarms.map(function(a){ return 'ore '+fmtHM(a.target); }).join(' · ');
+    document.getElementById('alarmOverlay').classList.add('show');
+  }
+
+  function triggerAlarm(label, targetDate){
+    activeAlarms.push({ label:label, target:targetDate });
+    renderAlarmOverlay();
+    startAlarmLoop();
+  }
+
+  document.getElementById('alarmDismiss').addEventListener('click', function(){
+    activeAlarms = [];
+    stopAlarmLoop();
+    document.getElementById('alarmOverlay').classList.remove('show');
+  });
+
+  // ---------- Prova suono ----------
+  btnTest.addEventListener('click', function(){
+    playCycle();
+  });
+
+  // ---------- Ritorno in primo piano ----------
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'visible'){
+      unlockAudio();
+      tick();            // recupera subito eventuali timer scaduti in background
+      updateWakeLock();  // il wake lock viene rilasciato dal browser quando la pagina è nascosta
+    }
+  });
+
+  // ---------- Ricalcolo uscite (usato da Calcolo Uscita, Aggiungi e Elimina Permesso) ----------
+  function clearExitTimers(){
+    state.timers = state.timers.filter(function(t){
+      if(t.label==='Uscita con buono pasto' || t.label==='Uscita regolare'){
+        var el = document.getElementById(t.elId);
+        if(el) el.remove();
+        return false;
+      }
+      return true;
+    });
+  }
+
+  function scheduleExitTimers(){
+    clearExitTimers();
+    var uscitaBP = addMinutes(state.entrata, SOGLIA_BUONO_PASTO_MIN + state.permessoTotalMin);
+    var uscitaReg = addMinutes(state.entrata, SOGLIA_REGOLARE_MIN + state.permessoTotalMin);
+    addTimer('Uscita con buono pasto', uscitaBP);
+    addTimer('Uscita regolare', uscitaReg);
+    updateEntrataBanner();
+  }
+
+  // Ricalcola totale e conteggio permessi a partire dalla lista
+  function recomputePermessi(){
+    state.permessoTotalMin = state.permessi.reduce(function(sum, p){ return sum + p.durataMin; }, 0);
+    state.permessoCount = state.permessi.length;
+  }
+
+  function deletePermesso(id){
+    state.permessi = state.permessi.filter(function(p){ return p.id!==id; });
+    recomputePermessi();
+    scheduleExitTimers();
+  }
+
+  function updateEntrataBanner(){
+    if(!state.entrata){
+      entrataBanner.hidden = true;
+      return;
+    }
+    entrataBanner.hidden = false;
+    var txt = 'Entrata: '+fmtHM(state.entrata);
+    if(state.permessoCount>0){
+      txt += ' · permessi scorporati: '+state.permessoTotalMin+' min ('+state.permessoCount+')';
+    }
+    var html = escapeHtml(txt);
+    if(state.permessi.length>0){
+      html += '<ul class="permesso-list">' + state.permessi.map(function(p){
+        return '<li>'+
+          '<span>'+escapeHtml(fmtHM(p.uscita))+'–'+escapeHtml(fmtHM(p.rientro))+' ('+p.durataMin+' min)</span>'+
+          '<button class="permesso-del" type="button" data-id="'+p.id+'" aria-label="Elimina permesso '+escapeHtml(fmtHM(p.uscita))+'–'+escapeHtml(fmtHM(p.rientro))+'">elimina</button>'+
+        '</li>';
+      }).join('') + '</ul>';
+    }
+    entrataBanner.innerHTML = html;
+
+    Array.prototype.forEach.call(entrataBanner.querySelectorAll('.permesso-del'), function(btn){
+      btn.addEventListener('click', function(){
+        deletePermesso(parseInt(btn.getAttribute('data-id'), 10));
+      });
+    });
+  }
+
+  // ---------- Pannello: Calcolo Uscita ----------
+  function showPanelUscita(){
+    setActiveButton(btnUscita);
+    clearActivePanel();
+    var div = document.createElement('div');
+    div.className = 'panel';
+    div.innerHTML =
+      '<h2>Orario di entrata</h2>'+
+      '<div class="field-row">'+
+        '<div class="field"><label for="inOraE">Ore</label><input id="inOraE" type="number" min="0" max="23" inputmode="numeric"></div>'+
+        '<div class="field"><label for="inMinE">Minuti</label><input id="inMinE" type="number" placeholder="0" min="0" max="59" inputmode="numeric"></div>'+
+      '</div>'+
+      '<button class="confirm-btn" type="button" id="confirmUscita">Calcola</button>'+
+      '<div class="note" id="noteUscita"></div>';
+    panelArea.appendChild(div);
+
+    document.getElementById('confirmUscita').addEventListener('click', function(){
+      unlockAudio();
+      var noteEl = document.getElementById('noteUscita');
+      var oreVal = document.getElementById('inOraE').value;
+      var minVal = document.getElementById('inMinE').value;
+      var validation = validateHM(oreVal, minVal);
+      if(!validation.ok){
+        noteEl.textContent = validation.error;
+        noteEl.className = 'warn';
+        return;
+      }
+      // Nuova entrata: resetta eventuali permessi precedenti, perché si tratta di una nuova timbratura
+      state.entrata = todayAt(validation.hh, validation.mm);
+      state.permessoTotalMin = 0;
+      state.permessoCount = 0;
+      state.permessi = [];
+      scheduleExitTimers();
+
+      clearActivePanel();
+      setActiveButton(null);
+    });
+  }
+
+  // ---------- Pannello: Aggiungi Permesso ----------
+  function showPanelPermesso(){
+    setActiveButton(btnPermesso);
+    clearActivePanel();
+
+    if(!state.entrata){
+      var warnDiv = document.createElement('div');
+      warnDiv.className = 'panel';
+      warnDiv.innerHTML =
+        '<h2>Aggiungi Permesso</h2>'+
+        '<div class="warn">Devi prima registrare l\'orario di entrata con "Calcolo Uscita".</div>';
+      panelArea.appendChild(warnDiv);
+      return;
+    }
+
+    var div = document.createElement('div');
+    div.className = 'panel';
+    div.innerHTML =
+      '<h2>Permesso</h2>'+
+      '<div class="field-row">'+
+        '<div class="field"><label for="inOraU">Uscita — ore</label><input id="inOraU" type="number" min="0" max="23" inputmode="numeric"></div>'+
+        '<div class="field"><label for="inMinU">Uscita — minuti</label><input id="inMinU" type="number" placeholder="0" min="0" max="59" inputmode="numeric"></div>'+
+      '</div>'+
+      '<div class="field-row">'+
+        '<div class="field"><label for="inOraR">Rientro — ore</label><input id="inOraR" type="number" min="0" max="23" inputmode="numeric"></div>'+
+        '<div class="field"><label for="inMinR">Rientro — minuti</label><input id="inMinR" type="number" placeholder="0" min="0" max="59" inputmode="numeric"></div>'+
+      '</div>'+
+      '<button class="confirm-btn" type="button" id="confirmPermesso">Aggiungi permesso</button>'+
+      '<div class="note" id="notePermesso"></div>';
+    panelArea.appendChild(div);
+
+    document.getElementById('confirmPermesso').addEventListener('click', function(){
+      unlockAudio();
+      var noteEl = document.getElementById('notePermesso');
+      var oU = document.getElementById('inOraU').value;
+      var mU = document.getElementById('inMinU').value;
+      var oR = document.getElementById('inOraR').value;
+      var mR = document.getElementById('inMinR').value;
+
+      var vU = validateHM(oU, mU);
+      var vR = validateHM(oR, mR);
+      if(!vU.ok){ noteEl.textContent = vU.error; noteEl.className='warn'; return; }
+      if(!vR.ok){ noteEl.textContent = vR.error; noteEl.className='warn'; return; }
+
+      var uscitaPermesso = todayAt(vU.hh, vU.mm);
+      var rientroPermesso = todayAt(vR.hh, vR.mm);
+
+      if(rientroPermesso.getTime() <= uscitaPermesso.getTime()){
+        noteEl.textContent = 'L\'orario di rientro deve essere successivo all\'orario di uscita per permesso.';
+        noteEl.className = 'warn';
+        return;
+      }
+      if(uscitaPermesso.getTime() < state.entrata.getTime()){
+        noteEl.textContent = 'L\'orario di uscita per permesso non può essere precedente all\'entrata ('+fmtHM(state.entrata)+').';
+        noteEl.className = 'warn';
+        return;
+      }
+
+      var durataMin = diffMinutes(rientroPermesso, uscitaPermesso);
+      permessoSeq += 1;
+      state.permessi.push({ id: permessoSeq, uscita: uscitaPermesso, rientro: rientroPermesso, durataMin: durataMin });
+      recomputePermessi();
+      scheduleExitTimers();
+
+      clearActivePanel();
+      setActiveButton(null);
+    });
+  }
+
+  // ---------- Pannello: Genera sveglia ----------
+  function showPanelSveglia(){
+    setActiveButton(btnSveglia);
+    clearActivePanel();
+    var div = document.createElement('div');
+    div.className = 'panel';
+    div.innerHTML =
+      '<h2>Sveglia</h2>'+
+      '<div class="field-row">'+
+        '<div class="field"><label for="inOraS">Ore</label><input id="inOraS" type="number" min="0" max="23" inputmode="numeric"></div>'+
+        '<div class="field"><label for="inMinS">Minuti</label><input id="inMinS" type="number" placeholder="0" min="0" max="59" inputmode="numeric"></div>'+
+      '</div>'+
+      '<div class="field-row">'+
+        '<div class="field" style="flex-basis:100%;"><label for="inLabelS">Etichetta (facoltativa)</label><input id="inLabelS" type="text" maxlength="40" placeholder="es. Chiamata cliente, Pausa, Riunione"></div>'+
+      '</div>'+
+      '<button class="confirm-btn" type="button" id="confirmSveglia">Imposta sveglia</button>'+
+      '<div class="note" id="noteSveglia"></div>';
+    panelArea.appendChild(div);
+
+    document.getElementById('confirmSveglia').addEventListener('click', function(){
+      unlockAudio();
+      var noteEl = document.getElementById('noteSveglia');
+      var o = document.getElementById('inOraS').value;
+      var m = document.getElementById('inMinS').value;
+      var v = validateHM(o, m);
+      if(!v.ok){ noteEl.textContent = v.error; noteEl.className='warn'; return; }
+
+      var etichettaVal = document.getElementById('inLabelS').value.trim();
+      var svegliaLabel = etichettaVal ? 'Sveglia — '+etichettaVal : 'Sveglia';
+
+      var target = todayAt(v.hh, v.mm);
+      if(target.getTime() <= new Date().getTime()){
+        target = new Date(target.getTime() + 24*3600000); // domani
+      }
+      addTimer(svegliaLabel, target);
+
+      clearActivePanel();
+      setActiveButton(null);
+    });
+  }
+
+  // ---------- Validazione input ----------
+  function validateHM(oreVal, minVal){
+    if(oreVal===''){
+      return { ok:false, error:'Inserisci le ore.' };
+    }
+    if(minVal===''){ minVal = '0'; } // minuti non inseriti: default 0
+    var hh = parseInt(oreVal, 10);
+    var mm = parseInt(minVal, 10);
+    if(isNaN(hh) || isNaN(mm)){
+      return { ok:false, error:'Ore e minuti devono essere numeri.' };
+    }
+    if(hh<0 || hh>23){
+      return { ok:false, error:'Le ore devono essere comprese tra 0 e 23.' };
+    }
+    if(mm<0 || mm>59){
+      return { ok:false, error:'I minuti devono essere compresi tra 0 e 59.' };
+    }
+    return { ok:true, hh:hh, mm:mm };
+  }
+
+  // ---------- Collegamento pulsanti principali ----------
+  btnUscita.addEventListener('click', function(){ unlockAudio(); showPanelUscita(); });
+  btnPermesso.addEventListener('click', function(){ unlockAudio(); showPanelPermesso(); });
+  btnSveglia.addEventListener('click', function(){ unlockAudio(); showPanelSveglia(); });
+
+})();
+</script>
+</body>
+</html>
