@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pulisci e Ordina Elenchi</title>
+    <style>
+        /* Reset e variabili di design ad alto contrasto */
+        :root {
+            --bg-page: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-input: #f8fafc;
+            --bg-output: #f0fdf4;
+            --border-strong: #475569;
+            --border-subtle: #cbd5e1;
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --accent-blue: #1d4ed8;
+            --accent-blue-hover: #1e40af;
+            --accent-green: #15803d;
+            --accent-green-bg: #dcfce7;
+            --accent-amber: #b45309;
+            --accent-amber-bg: #fef3c7;
+            --danger-red: #b91c1c;
+            --danger-red-bg: #fee2e2;
+            --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.1);
+            --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.12);
+            --radius-md: 10px;
+            --radius-lg: 14px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Intestazione */
+        header {
+            background-color: var(--bg-card);
+            border-bottom: 2px solid var(--border-subtle);
+            padding: 1.25rem 1rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .container {
+            max-width: 1140px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .header-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* Contenuto principale */
+        main {
+            flex: 1;
+            padding: 1.5rem 1rem 2.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        /* Barra opzioni */
+        .control-panel {
+            background-color: var(--bg-card);
+            border: 2px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        /* Gruppo checkbox impilate verticalmente */
+        .options-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.65rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-row input[type="checkbox"] {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-top: 0.15rem;
+            accent-color: var(--accent-blue);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .checkbox-label-text {
+            font-size: 0.98rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .checkbox-hint {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+        }
+
+        /* Campo per carattere/stringa personalizzata */
+        .custom-input {
+            width: 9rem;
+            max-width: 100%;
+            margin-left: 0.4rem;
+            padding: 0.3rem 0.6rem;
+            font-family: inherit;
+            font-size: 0.98rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            background-color: var(--bg-input);
+            border: 2px solid var(--border-strong);
+            border-radius: 8px;
+        }
+
+        .custom-input:focus {
+            outline: none;
+            background-color: #ffffff;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.2);
+        }
+
+        /* Pulsanti */
+        button {
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 700;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            min-height: 46px;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button:focus-visible {
+            outline: 3px solid rgba(29, 78, 216, 0.45);
+            outline-offset: 2px;
+        }
+
+        .btn-secondary {
+            background-color: #ffffff;
+            color: var(--text-primary);
+            border: 2px solid var(--border-strong);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-secondary:hover {
+            background-color: #f1f5f9;
+        }
+
+        .btn-danger {
+            background-color: #ffffff;
+            color: var(--danger-red);
+            border: 2px solid var(--danger-red);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger-red-bg);
+        }
+
+        .btn-copied {
+            background-color: var(--accent-green-bg) !important;
+            color: var(--accent-green) !important;
+            border-color: var(--accent-green) !important;
+        }
+
+        /* Banner feedback */
+        .feedback-bar {
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-md);
+            border: 2px solid var(--accent-blue);
+            background-color: #eff6ff;
+            color: #1e3a8a;
+            font-weight: 700;
+            font-size: 0.92rem;
+            display: none;
+        }
+
+        .feedback-bar.visible {
+            display: block;
+        }
+
+        .feedback-bar.success {
+            border-color: var(--accent-green);
+            background-color: var(--accent-green-bg);
+            color: #14532d;
+        }
+
+        .feedback-bar.warning {
+            border-color: var(--accent-amber);
+            background-color: var(--accent-amber-bg);
+            color: #78350f;
+        }
+
+        /* Griglia a due colonne */
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
+        }
+
+        @media (min-width: 900px) {
+            .workspace-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .panel-card {
+            background-color: var(--bg-card);
+            border: 2px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .panel-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        .panel-title {
+            font-size: 1.08rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .step-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.55rem;
+            height: 1.55rem;
+            border-radius: 999px;
+            background-color: var(--text-primary);
+            color: #ffffff;
+            font-size: 0.8rem;
+            font-weight: 800;
+        }
+
+        .step-badge.output {
+            background-color: var(--accent-green);
+        }
+
+        .badges-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+
+        .stat-badge {
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.25rem 0.65rem;
+            border-radius: 8px;
+            border: 1.5px solid var(--border-subtle);
+            background-color: #f8fafc;
+            color: var(--text-primary);
+        }
+
+        .stat-badge.unique {
+            border-color: #86efac;
+            background-color: var(--accent-green-bg);
+            color: #14532d;
+        }
+
+        .stat-badge.removed {
+            border-color: #fcd34d;
+            background-color: var(--accent-amber-bg);
+            color: #78350f;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 0.95rem;
+            font-family: inherit;
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg-input);
+            border: 2px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            background-color: #ffffff;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.2);
+        }
+
+        textarea[readonly] {
+            background-color: var(--bg-output);
+            border-color: var(--accent-green);
+        }
+
+        .panel-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .panel-actions button {
+            flex: 1 1 auto;
+        }
+
+        footer {
+            background-color: var(--bg-card);
+            border-top: 1px solid var(--border-subtle);
+            padding: 1rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container header-content">
+            <h1>Pulisci e Ordina Elenchi</h1>
+            <p class="subtitle">Inserisci un elenco di nomi: rimozione di caratteri indesiderati e doppioni e ordinamento alfabetico (A-Z) avvengono in tempo reale mentre scrivi.</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Barra Opzioni -->
+        <section class="control-panel" aria-label="Opzioni di elaborazione">
+            <div class="options-stack">
+                <label class="checkbox-row" for="chk-case">
+                    <input type="checkbox" id="chk-case" checked>
+                    <span>
+                        <span class="checkbox-label-text">Ignora maiuscole/minuscole nei doppioni</span>
+                        <span class="checkbox-hint">Considera uguali nomi come "Mario Rossi" e "mario rossi"</span>
+                    </span>
+                </label>
+
+                <label class="checkbox-row" for="chk-chars">
+                    <input type="checkbox" id="chk-chars" checked>
+                    <span>
+                        <span class="checkbox-label-text">Elimina '"' e '.'</span>
+                        <span class="checkbox-hint">Rimuove ogni virgoletta doppia (") e punto (.) prima di pulire e ordinare</span>
+                    </span>
+                </label>
+
+                <div class="checkbox-row">
+                    <input type="checkbox" id="chk-custom" aria-label="Attiva eliminazione carattere o stringa personalizzata">
+                    <span>
+                        <span class="checkbox-label-text">
+                            <label for="chk-custom" style="cursor:pointer;">Elimina anche:</label>
+                            <input type="text" id="custom-string" class="custom-input" maxlength="50" autocomplete="off" spellcheck="false" placeholder="es. , ; -" aria-label="Carattere o stringa da eliminare">
+                        </span>
+                        <span class="checkbox-hint">Rimuove ogni occorrenza esatta del carattere o della stringa inserita (distingue maiuscole/minuscole)</span>
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Barra di stato/notifica -->
+        <div id="feedback-bar" class="feedback-bar" role="status" aria-live="polite"></div>
+
+        <!-- Area di lavoro a due colonne -->
+        <section class="workspace-grid" aria-label="Inserimento e risultato">
+            <!-- Colonna Sinistra: Input -->
+            <div class="panel-card">
+                <div class="panel-header">
+                    <label for="input-names" class="panel-title">
+                        <span class="step-badge">1</span>
+                        Elenco originale
+                    </label>
+                    <div class="badges-group">
+                        <span id="badge-input-count" class="stat-badge">0 righe</span>
+                    </div>
+                </div>
+
+                <textarea
+                    id="input-names"
+                    placeholder="Incolla o scrivi qui i nomi, uno per riga...&#10;&#10;Esempio:&#10;Mario Rossi&#10;&quot;Anna Bianchi.&quot;&#10;mario rossi"
+                ></textarea>
+
+                <div class="panel-actions">
+                    <button type="button" id="btn-example" class="btn-secondary">
+                        Carica esempio
+                    </button>
+                    <button type="button" id="btn-clear" class="btn-danger">
+                        Svuota
+                    </button>
+                </div>
+            </div>
+
+            <!-- Colonna Destra: Output -->
+            <div class="panel-card">
+                <div class="panel-header">
+                    <label for="output-names" class="panel-title">
+                        <span class="step-badge output">2</span>
+                        Elenco pulito e ordinato
+                    </label>
+                    <div class="badges-group">
+                        <span id="badge-unique-count" class="stat-badge unique">0 unici</span>
+                        <span id="badge-removed-count" class="stat-badge removed">0 doppioni rimossi</span>
+                    </div>
+                </div>
+
+                <textarea
+                    id="output-names"
+                    readonly
+                    placeholder="Il risultato ordinato apparirà qui..."
+                ></textarea>
+
+                <div class="panel-actions">
+                    <button type="button" id="btn-copy" class="btn-secondary">
+                        Copia risultato
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        Elaborazione istantanea locale nel browser &bull; Ordinamento alfabetico italiano (A-Z)
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var inputTextarea = document.getElementById('input-names');
+            var outputTextarea = document.getElementById('output-names');
+            var chkCase = document.getElementById('chk-case');
+            var chkChars = document.getElementById('chk-chars');
+            var chkCustom = document.getElementById('chk-custom');
+            var customInput = document.getElementById('custom-string');
+
+            var btnExample = document.getElementById('btn-example');
+            var btnClear = document.getElementById('btn-clear');
+            var btnCopy = document.getElementById('btn-copy');
+
+            var badgeInputCount = document.getElementById('badge-input-count');
+            var badgeUniqueCount = document.getElementById('badge-unique-count');
+            var badgeRemovedCount = document.getElementById('badge-removed-count');
+            var feedbackBar = document.getElementById('feedback-bar');
+
+            var feedbackTimer = null;
+            var copyResetTimer = null;
+
+            function showFeedback(message, type) {
+                if (feedbackTimer) {
+                    clearTimeout(feedbackTimer);
+                }
+                feedbackBar.textContent = message;
+                feedbackBar.className = 'feedback-bar visible ' + (type || '');
+                feedbackTimer = setTimeout(function () {
+                    feedbackBar.className = 'feedback-bar';
+                }, 4000);
+            }
+
+            function parseInputLines(rawText, stripQuotesAndDots, customString) {
+                if (!rawText) {
+                    return [];
+                }
+                var lines = rawText.split(/\r?\n/);
+                var cleaned = [];
+                for (var i = 0; i < lines.length; i++) {
+                    var line = lines[i];
+                    if (stripQuotesAndDots) {
+                        line = line.replace(/["\.]/g, '');
+                    }
+                    if (customString) {
+                        // split/join: sostituzione letterale, senza interpretare caratteri speciali di regex
+                        line = line.split(customString).join('');
+                    }
+                    line = line.trim().replace(/\s+/g, ' ');
+                    if (line.length > 0) {
+                        cleaned.push(line);
+                    }
+                }
+                return cleaned;
+            }
+
+            // Elaborazione in tempo reale: pulizia, rimozione doppioni, ordinamento A-Z
+            function processNames() {
+                var customString = chkCustom.checked ? customInput.value : '';
+                var validLines = parseInputLines(inputTextarea.value, chkChars.checked, customString);
+                var totalCount = validLines.length;
+
+                badgeInputCount.textContent = totalCount + (totalCount === 1 ? ' riga' : ' righe');
+
+                if (totalCount === 0) {
+                    outputTextarea.value = '';
+                    badgeUniqueCount.textContent = '0 unici';
+                    badgeRemovedCount.textContent = '0 doppioni rimossi';
+                    return;
+                }
+
+                var ignoreCase = chkCase.checked;
+                var seen = Object.create(null);
+                var uniqueList = [];
+
+                for (var i = 0; i < validLines.length; i++) {
+                    var item = validLines[i];
+                    var key = ignoreCase ? item.toLowerCase() : item;
+                    if (!seen[key]) {
+                        seen[key] = true;
+                        uniqueList.push(item);
+                    }
+                }
+
+                uniqueList.sort(function (a, b) {
+                    return a.localeCompare(b, 'it', { sensitivity: 'base' });
+                });
+
+                outputTextarea.value = uniqueList.join('\n');
+
+                var uniqueCount = uniqueList.length;
+                var removedCount = totalCount - uniqueCount;
+
+                badgeUniqueCount.textContent = uniqueCount + (uniqueCount === 1 ? ' unico' : ' unici');
+                badgeRemovedCount.textContent = removedCount + (removedCount === 1 ? ' doppione rimosso' : ' doppioni rimossi');
+            }
+
+            function loadExample() {
+                var exampleText = [
+                    'Mario Rossi',
+                    '"Anna Bianchi."',
+                    'mario rossi',
+                    'Luca Verdi.',
+                    '',
+                    '"Elena Neri"',
+                    'Anna Bianchi',
+                    'Giulia Conti.',
+                    '"Luca Verdi"',
+                    'Marco Gallo'
+                ].join('\n');
+
+                inputTextarea.value = exampleText;
+                processNames();
+                showFeedback('Esempio caricato.', 'success');
+            }
+
+            function clearAll() {
+                inputTextarea.value = '';
+                processNames();
+                inputTextarea.focus();
+                showFeedback('Campi svuotati.', '');
+            }
+
+            function copyResult() {
+                var textToCopy = outputTextarea.value;
+                if (!textToCopy.trim()) {
+                    showFeedback('Nessun risultato da copiare. Inserisci prima un elenco.', 'warning');
+                    return;
+                }
+
+                function confirmCopied() {
+                    if (copyResetTimer) {
+                        clearTimeout(copyResetTimer);
+                    }
+                    btnCopy.textContent = 'Copiato!';
+                    btnCopy.classList.add('btn-copied');
+                    showFeedback('Risultato copiato negli appunti!', 'success');
+
+                    copyResetTimer = setTimeout(function () {
+                        btnCopy.textContent = 'Copia risultato';
+                        btnCopy.classList.remove('btn-copied');
+                    }, 2000);
+                }
+
+                function fallbackCopy() {
+                    outputTextarea.focus();
+                    outputTextarea.select();
+                    outputTextarea.setSelectionRange(0, textToCopy.length);
+                    try {
+                        var ok = document.execCommand('copy');
+                        if (window.getSelection) {
+                            window.getSelection().removeAllRanges();
+                        }
+                        if (ok) {
+                            confirmCopied();
+                        } else {
+                            showFeedback('Impossibile copiare automaticamente. Seleziona e copia manualmente.', 'warning');
+                        }
+                    } catch (err) {
+                        showFeedback('Errore durante la copia negli appunti.', 'warning');
+                    }
+                }
+
+                if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                    navigator.clipboard.writeText(textToCopy).then(function () {
+                        confirmCopied();
+                    }).catch(function () {
+                        fallbackCopy();
+                    });
+                } else {
+                    fallbackCopy();
+                }
+            }
+
+            // Collegamento eventi
+            btnExample.addEventListener('click', loadExample);
+            btnClear.addEventListener('click', clearAll);
+            btnCopy.addEventListener('click', copyResult);
+
+            // Tempo reale: ad ogni modifica del testo (digitazione, incolla, taglia, annulla)
+            inputTextarea.addEventListener('input', processNames);
+            chkCase.addEventListener('change', processNames);
+            chkChars.addEventListener('change', processNames);
+            chkCustom.addEventListener('change', processNames);
+            customInput.addEventListener('input', function () {
+                // Scrivere nel campo attiva automaticamente il flag
+                if (customInput.value.length > 0 && !chkCustom.checked) {
+                    chkCustom.checked = true;
+                }
+                processNames();
+            });
+
+            // Stato iniziale
+            processNames();
+        });
+    </script>
+</body>
+</html>
